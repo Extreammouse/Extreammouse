@@ -229,7 +229,7 @@ const WriteToRecruiter: React.FC = () => {
       appendDebugInfo('User document updated successfully');
   
       // API call
-      const API_URL = 'https://jobapplicationprodv3-501349658960.us-south1.run.app/generate-job-output';
+      const API_URL = '';
   
       const requestBody = {
         email: user.email,

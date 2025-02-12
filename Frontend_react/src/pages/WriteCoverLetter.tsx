@@ -151,7 +151,7 @@ const WriteCoverLetter: React.FC = () => {
       setGenerating(true);
     
       try {
-        const response = await fetch('https://jobapplicationprodv3-501349658960.us-south1.run.app/generate_coverletter_output', {
+        const response = await fetch('', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

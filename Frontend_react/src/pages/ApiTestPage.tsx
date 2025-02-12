@@ -18,7 +18,7 @@ const ApiTestPage = () => {
             {JSON.stringify({
               nodeEnv: process.env.NODE_ENV,
               baseUrl: window.location.origin,
-              apiUrl: 'https://jobapplicationprodv3-501349658960.us-central1.run.app'
+              apiUrl: ''
             }, null, 2)}
           </pre>
         </div>

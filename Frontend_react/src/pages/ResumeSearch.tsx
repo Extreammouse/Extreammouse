@@ -133,7 +133,7 @@ const ResumeSearch: React.FC = () => {
       }
 
       const skillsArray = skills.split(',').map(skill => skill.trim());
-      const response = await fetch('https://jobapplicationprodv3-501349658960.us-south1.run.app/match_resumes', {
+      const response = await fetch('', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
