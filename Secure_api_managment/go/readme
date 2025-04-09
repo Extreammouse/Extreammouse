@@ -1,0 +1,78 @@
+Here’s a list of commands to run and use the Go-based CLI todo application:
+
+Setup Commands
+	1.	Initialize a Go Module
+
+go mod init todo-cli
+
+
+	2.	Install Cobra
+
+go get -u github.com/spf13/cobra@latest
+
+
+	3.	Run the Application
+
+go run main.go
+
+
+	4.	Build the Application
+
+go build -o todo
+
+
+	5.	Run the Built CLI
+
+./todo
+
+Todo App Commands
+	1.	Add a Task
+
+Add a new task with a description:
+
+go run main.go add --desc "Task description"
+
+Example:
+
+go run main.go add --desc "Buy groceries"
+
+
+	2.	List All Tasks
+View all tasks with their status:
+
+go run main.go list
+
+
+	3.	Mark a Task as Completed
+Mark a task as done by its ID:
+
+go run main.go complete <task ID>
+
+Example:
+
+go run main.go complete 1
+
+
+	4.	Delete a Task
+Remove a task by its ID:
+
+go run main.go delete <task ID>
+
+Example:
+
+go run main.go delete 1
+
+Using the Built Binary
+
+If you’ve built the binary (todo), replace go run main.go with ./todo.
+For example:
+	•	Add a task:
+
+./todo add --desc "Learn Go"
+
+
+	•	List tasks:
+
+./todo list
+
+Let me know if you’d like additional commands or features!

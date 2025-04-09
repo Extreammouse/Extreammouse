@@ -1,0 +1,27 @@
+---
+  name: Run Shell Script on Multiple Servers
+  hosts: hostip 
+  gather_facts: false
+  tasks:
+    - name: Copy the script tò remote servers
+      СОРУ:
+        src: /home/jenkins/scripts/kill_all_java.sh
+        dest: /tmp/kill_all_java.sh
+        mode: '0755'
+
+    - name: Execute the script on remote servers 
+      shell: bash /tmp/kill_all_java.sh
+      register: script_output
+    
+    - name: Print the script standard output 
+      debug:
+        var: script_output.stdout
+    
+    - name: Print the script error output 
+      debug:
+        var: script_output.stderr
+    
+    - name: Remove the script from remote servers 
+      file:
+        state: absent 
+        path: /tmp/kill_all_java.sh

@@ -1,0 +1,472 @@
+DAY5
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: edvol-dep
+  namespace: default
+  #labels: # are optional
+spec:
+  replicas: 2  # the number of pods to be created
+  selector:    # is mandatory # what pods to be managed by controller
+    matchLabels:
+     app: edapp
+  template: # what pod to be created
+    metadata:
+      #name: kube will generate a random unique name for each automatically
+      labels:
+        app: edapp
+    spec:
+      volumes:
+        - name: edvol # the name can be anything
+          emptyDir: {}
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      #initContainers:
+      containers:
+        - name: cont1
+          image: tomcat:latest
+          volumeMounts:
+            - name: edvol
+              mountPath: /usr/local/tomcat/logs  # this is the path inside the cont where the logs present / app data
+        - name: cont2
+          image: ubuntu:latest
+          command: ["/bin/bash", "-c", "sleep 6000"]
+          volumeMounts:
+            - name: edvol
+              mountPath: /cont2data # this is the path inside the cont where the logs present / app data
+
+  360  vi ed-vol-dep.yaml
+  361  kubectl apply -f ed-vol-dep.yaml
+  362  kubectl get pods -o wide
+  364  kubectl exec -it edvol-dep-697c89b575-r7jdl -c cont1 -- /bin/bash
+  365  kubectl exec -it edvol-dep-697c89b575-r7jdl -c cont2 -- /bin/bash
+
+
+  368  vi pv.yaml
+  369  kubectl apply -f pv.yaml
+  370  kubectl get pv
+  371  vi pvc.yaml
+  372  kubectl apply -f pvc.yaml
+  373  kubectl get pvc
+  374  kubectl get pv
+  375  vi hppv-dep.yaml
+  376  kubectl apply -f hppv-dep.yaml
+  377  vi hppv-dep.yaml
+  378  kubectl apply -f hppv-dep.yaml
+  379  kubectl get pods -o wide
+  380  kubectl exec -it hp-pv-dep-797cf98f88-vs8lh -- /bin/bash
+  381  kubectl get deployment
+  382  kubectl delete deployment --all
+  383  kubectl get pods -o wide
+
+kind: PersistentVolume 
+apiVersion: v1
+metadata: 
+  name: hp-pv
+spec: 
+  hostPath: 
+    path: /appdata  # this will be the path on the vm/node where the pod will run 
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce # only one node can read/write data / ReadWriteMany / ReadOnlyMany 
+
+kind: PersistentVolumeClaim
+apiVersion: v1 
+metadata:
+  name: app1-pvc 
+spec: 
+  volumeName: hp-pv
+  resources: 
+    requests: 
+      storage: 1Gi 
+  accessModes:
+    - ReadWriteOnce 
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: hp-pv-dep
+  namespace: default
+  #labels: # are optional
+spec:
+  replicas: 2  # the number of pods to be created
+  selector:    # is mandatory # what pods to be managed by controller
+    matchLabels:
+     app: hppv
+  template: # what pod to be created
+    metadata:
+      #name: kube will generate a random unique name for each automatically
+      labels:
+        app: hppv
+    spec:
+      volumes:
+        - name: hpvol # the name can be anything 
+          persistentVolumeClaim: #emptyDir: {}
+            calimName: app1-pvc
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      #initContainers:
+      containers:
+        - name: cont1
+          image: tomcat:latest
+          volumeMounts: 
+            - name: hpvol
+              mountPath: /usr/local/tomcat/logs  # this is the path inside the cont where the logs present / app data 
+
+
+NFS
+
+
+kind: PersistentVolume 
+apiVersion: v1
+metadata: 
+  name: nfs-pv
+spec: 
+  nfs: 
+    server: 104.154.156.95
+    path: /mnt/sharedfolder
+  #hostPath: 
+  #  path: /appdata  # this will be the path on the vm/node where the pod will run 
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany # only one node can read/write data / ReadWriteMany / ReadOnlyMany 
+---
+kind: PersistentVolumeClaim
+apiVersion: v1 
+metadata:
+  name: app1-nfs-pvc 
+spec: 
+  volumeName: nfs-pv
+  resources: 
+    requests: 
+      storage: 1Gi 
+  accessModes:
+    - ReadWriteMany
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: nfs-pv-dep
+  namespace: default
+  #labels: # are optional
+spec:
+  replicas: 2  # the number of pods to be created
+  selector:    # is mandatory # what pods to be managed by controller
+    matchLabels:
+     app: nfspv
+  template: # what pod to be created
+    metadata:
+      #name: kube will generate a random unique name for each automatically
+      labels:
+        app: nfspv
+    spec:
+      volumes:
+        - name: nfsvol # the name can be anything 
+          persistentVolumeClaim: #emptyDir: {}
+            claimName: app1-nfs-pvc
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      #initContainers:
+      containers:
+        - name: cont1
+          image: nginx:latest
+          volumeMounts: 
+            - name: nfsvol
+              mountPath: /usr/share/nginx/html  # this is the path inside the cont where the logs present / app data
+
+
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-ssd
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: claim1
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: fast
+  resources:
+    requests:
+      storage: 30Gi
+
+
+  410  vi app.props
+  411  kubectl create configmap devdbconf --from-file=app.props
+  412  kubectl get configmap
+  413  kubectl describe configmap devdbconf
+  414  vi configmap.yaml
+  415  kubectl apply -f configmap.yaml
+  416  kubectl get cm
+  417  kubectl describe cm qadbconfig
+  418  clear
+  419  vi cm-dep.yaml
+  420  kubectl apply -f cm-dep.yaml
+  421  vi cm-dep.yaml
+  422  kubectl apply -f cm-dep.yaml
+  423  kubectl get pods -o wide
+  424  kubectl exec -it cm-as-vol-data-5bdf87dd9b-68sn8 -- /bin/bash
+
+devops@master-node:~$ cat app.props
+DBHOST: "mongo"
+DBNAME: "devdb"
+DBPORT: "27017"
+DBURL: "mondburi://mongo:27017/devdb"
+
+kind: ConfigMap 
+apiVersion: v1 
+metadata: 
+  name: qadbconfig
+data: 
+  app.pros: |
+     DBNAME: "qadb"
+     DBHOST: "mongo"
+     DBPORT: "27017"
+     DBURL: "mongodburi://mongo:27017/qadb"
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: cm-as-vol-data
+  namespace: default
+  #labels: # are optional
+spec:
+  replicas: 2  # the number of pods to be created
+  selector:    # is mandatory # what pods to be managed by controller
+    matchLabels:
+     app: cmapp
+  template: # what pod to be created
+    metadata:
+      #name: kube will generate a random unique name for each automatically
+      labels:
+        app: cmapp
+    spec:
+      volumes:
+        - name: nfsvol # the name can be anything 
+          persistentVolumeClaim: #emptyDir: {}
+            calimName: app1-nfs-pvc
+        - name: cmvol 
+          configMap: 
+            name: devdbconf
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      #initContainers:
+      containers:
+        - name: cont1
+          image: nginx:latest
+          volumeMounts: 
+            - name: nfsvol
+              mountPath: /usr/share/nginx/html  # this is the path inside the cont where the logs present / app data 
+            - name: cmvol 
+              mountPath: /app
+
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: cm-as-env-data
+  namespace: default
+  #labels: # are optional
+spec:
+  replicas: 2  # the number of pods to be created
+  selector:    # is mandatory # what pods to be managed by controller
+    matchLabels:
+     app: cmapp
+  template: # what pod to be created
+    metadata:
+      #name: kube will generate a random unique name for each automatically
+      labels:
+        app: cmapp
+    spec:
+      volumes:
+        - name: nfsvol # the name can be anything 
+          persistentVolumeClaim: #emptyDir: {}
+            calimName: app1-nfs-pvc
+        - name: cmvol 
+          configMap: 
+            name: devdbconf
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      #initContainers:
+      containers:
+        - name: cont1
+          image: nginx:latest
+          envFrom:
+            - configMapRef: 
+                 name: qadbconfig  
+          volumeMounts: 
+            - name: nfsvol
+              mountPath: /usr/share/nginx/html  # this is the path inside the cont where the logs present / app data 
+            - name: cmvol 
+              mountPath: /app
+
+
+
+kind: ConfigMap 
+apiVersion: v1 
+metadata: 
+  name: qadbconfig1
+data: 
+    DBNAME: "qadb"
+    DBHOST: "mongo"
+    DBPORT: "27017"
+    DBURL: "mongodburi://mongo:27017/qadb"
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: cm-as-env-data1
+  namespace: default
+  #labels: # are optional
+spec:
+  replicas: 2  # the number of pods to be created
+  selector:    # is mandatory # what pods to be managed by controller
+    matchLabels:
+     app: cmapp
+  template: # what pod to be created
+    metadata:
+      #name: kube will generate a random unique name for each automatically
+      labels:
+        app: cmapp
+    spec:
+      volumes:
+        - name: nfsvol # the name can be anything 
+          persistentVolumeClaim: #emptyDir: {}
+            claimName: app1-nfs-pvc
+        - name: cmvol 
+          configMap: 
+            name: devdbconf
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      #initContainers:
+      containers:
+        - name: cont1
+          image: nginx:latest
+          envFrom:
+            - configMapRef: 
+                name: qadbconfig1
+          volumeMounts: 
+            - name: nfsvol
+              mountPath: /usr/share/nginx/html  # this is the path inside the cont where the logs present / app data 
+            - name: cmvol 
+              mountPath: /app
+
+
+kind: Secret 
+apiVersion: v1 
+metadata: 
+  name: qadbcred
+data: 
+  username: "bW9ubmdvZGJhZG1pbnVzZXI="
+  password: "YWRtaW51c2VybW9uZ29wYXNz"
+--- 
+kind: Secret
+apiVersion: v1 
+metadata: 
+  name: devdbcred
+data: 
+  dbcred.props: dXNlcm5hbWU6ICJtb25nb2RiYWRtaW51c2VyMTEiCnBhc3N3b3JkOiAibGtlbGtlbGFrZGpmbDtha2Zqc2siCg== 
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: sec-as-env-data
+  namespace: default
+  #labels: # are optional
+spec:
+  replicas: 2  # the number of pods to be created
+  selector:    # is mandatory # what pods to be managed by controller
+    matchLabels:
+     app: cmapp
+  template: # what pod to be created
+    metadata:
+      #name: kube will generate a random unique name for each automatically
+      labels:
+        app: cmapp
+    spec:
+      volumes:
+        - name: nfsvol # the name can be anything 
+          persistentVolumeClaim: #emptyDir: {}
+            claimName: app1-nfs-pvc
+        - name: cmvol 
+          configMap: 
+            name: devdbconf
+        - name: secvol
+          secret: 
+            secretName: devdbcred
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      #initContainers:
+      containers:
+        - name: cont1
+          image: nginx:latest
+          envFrom:
+            - configMapRef: 
+                name: qadbconfig1
+            - secretRef: 
+                name: qadbcred
+          volumeMounts: 
+            - name: nfsvol
+              mountPath: /usr/share/nginx/html  # this is the path inside the cont where the logs present / app data 
+            - name: cmvol 
+              mountPath: /app
+            - name: secvol 
+              mountPath: /dbcred
+
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: ns-dep
+  namespace: default
+  #labels: # are optional
+spec:
+  replicas: 2  # the number of pods to be created
+  selector:    # is mandatory # what pods to be managed by controller
+    matchLabels:
+     app: cmapp
+  template: # what pod to be created
+    metadata:
+      #name: kube will generate a random unique name for each automatically
+      labels:
+        app: cmapp
+    spec:
+      #nodeName: worker-node01
+      nodeSelector:
+        role: app 
+      #volumes:
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      #initContainers:
+      containers:
+        - name: cont1
+          image: nginx:latest
+          #envFrom:
+          #volumeMounts: 
+
+  463  vi nn-dep.yaml
+  464  kubectl apply -f nn-dep.yaml
+  465  kubectl get pods -o wide
+  466  kubectl scale deployment nn-dep --replicas 10
+  467  kubectl get pods -o wide
+  468  kubectl scale deployment nn-dep --replicas 1
+  469  kubectl get nodes -o wide
+  470  kubectl describe nodes worker-node01
+  471  kubectl get nodes -o wide
+  472  kubectl label node worker-node01 role=app
+  473  kubectl label node worker-node02 role=app
+  474  kubectl label node worker-node02 env=qa
+  475  kubectl label node worker-node01 env=dev
+  476  kubectl describe nodes worker-node01
+  477  vi ns-dep.yaml
+  478  kubectl apply -f ns-dep.yaml
+  479  kubectl get pods -o wide

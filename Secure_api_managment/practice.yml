@@ -1,0 +1,54 @@
+name: servicename .git/services
+
+on:
+  push:
+    branch : [main]
+  pull_request :
+    branch : [main]
+  schedule: 
+    - cron : '0 0 * * 6'
+
+jobs:
+  test :
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkoutcode  
+        uses: actions/checkout@v3
+
+      - name: dockerlogin with actions
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DockerUsername }}
+          password: ${{ secrets.DockerPassword }}
+
+      - name: docker login without action
+        run: |
+          docker login -u ${{ secrets.DockerUsername }} -p ${{ secrets.DockerPassword }}
+
+      - name: docker build-push
+        working-directory: ./path/to/your/directory
+        run: |
+          TAG=$(git -rev-parse --short HEAD)
+          docker build -t my-app:TAG .
+          docker tag my-app:$TAG ${{ secrets.DockerUsername }}/my-app:$TAG
+
+      - name: docker push image to docker hub
+        working-directory: ./path/to/working/directory
+        run : 
+          docker push ${{ secrets.DockerUsername }}/my-app:latest
+
+  deploy:
+    runs-on: ubuntu:latest
+    needs: test
+    steps:
+      - name: deploy docker image on server
+        uses: appleboy/ssh-actions@0.1.7
+        which:
+          server: ${{ secreats.serverip }}
+          username: username
+          key: ${{secrets.authkey_server}}
+          script: |
+            docker login -u ${{ secrets.user }} -p ${{ secrets.password }}
+            docker pull ${{ secrets.Dockerusername }}/my-app:latest
+            docker stop my-app || true
+            docker run -d --name my-app -p ${{ secrets.Dockerusername }}/my-app:latest

@@ -1,0 +1,158 @@
+DAY4
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: pyapp-svc
+  namespace: default
+  #labels:
+spec:
+  type: LoadBalancer # it will try to create an LB on a cloud service if configured accordingly & also 
+                    #  publishes a nodeport on every node/vm in your cluster & also creates an internal virutal LB(ClusterIP)
+                    # (kube will genereate a LB IP also here) that can forward request into a single/group of pods
+                    # then it maps the nodeport to clusterip:port
+  selector: # select all the pods with this label as backend
+    app: pyapp
+  ports:
+    - name: cont1-access  # name can be anything
+      port: 90  # this is the port we will use along with LB IP genereated
+      targetPort: 3000  # this is the port of the process inside the cont
+      #nodePort: 30001  # -P
+
+
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: testds
+  namespace: default
+  #labels: # are optional
+spec:
+  selector:    # is mandatory # what pods to be managed by controller
+    matchLabels:
+     app: testds
+  template: # what pod to be created
+    metadata:
+      #name: kube will generate a random unique name for each automatically
+      labels:
+        app: testds
+    spec:
+      terminationGracePeriodSeconds: 30 # default
+      restartPolicy: Always
+      #initContainers:
+      containers:
+        - name: cont1
+          image: nginx:latest
+
+
+  256  vi ds.yaml
+  257  kubectl apply -f ds.yaml
+  258  kubectl get daemonset -o wide
+  259  kubectl get pods -o wide
+  260  kubectl delete pods testds-4bvl5 testds-vvfs6
+  261  kubectl get pods -o wide
+  262  kubectl scale daemonset testds --replicas 6
+  263  cat ds.yaml
+
+
+https://raw.githubusercontent.com/lerndevops/educka/master/3-controllers/jobs/etcd-bakup.yaml 
+
+
+  276  kubectl delete daemonset testds
+  277  kubectl delete deployment pyapp test
+  278  kubectl get services
+  279  kubectl get pods
+  280  kubectl delete pod --all
+  281  kubectl apply -f https://raw.githubusercontent.com/lerndevops/educka/master/3-controllers/jobs/etcd-bakup.yaml
+  282  kubectl get jobs -o wide
+  283  kubectl get pods -o wide
+  284  kubectl logs backup-etcd-job-7299b
+
+
+  289  kubectl apply -f https://raw.githubusercontent.com/lerndevops/educka/master/3-controllers/cronjobs/etcd-bakup-cronjob.yaml
+  290  kubectl get cronjobs
+  291  kubectl get jobs
+  292  kubectl get pods -o wide
+  293  watch kubectl get pods -o wide
+  294  kubectl get pods -o wide
+
+vi kubeserve.yaml  -- take the content from below yaml 
+https://raw.githubusercontent.com/lerndevops/educka/master/3-controllers/deployments/deployment-ex3.yml
+  303  kubectl get deployment -o wide
+  304  kubectl get pods -o wide
+  305  kubectl get deployment -o wide
+  306  kubectl get replicaset -o wide
+  307  kubectl get pods -o wide
+  308  vi kubeserve.yaml
+  309  cat kubeserve.yaml
+  310  kubectl get services
+  311  kubectl get deployment
+  312  vi kubeserve.yaml
+  313  kubectl apply -f kubeserve.yaml
+  314  kubectl rollout status deployment kubeserve
+  315  kubectl get deployment -o wide
+  316  kubectl get services -o wide
+  317  kubectl describe service kubeserve-svc
+  318  vi kubeserve.yaml
+  319  kubectl apply -f kubeserve.yaml
+  320  vi kubeserve.yaml
+  321  kubectl rollout history deployment kubeserve
+  322  kubectl rollout undo deployment kubeserve
+  323  history
+  324  kubectl rollout history deployment kubeserve
+  325  kubectl rollout undo deployment kubeserve --to-revision 1
+
+
+https://github.com/lerndevops/educka/blob/master/3-controllers/deployments/rolling-update.md 
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: pyapp
+  namespace: default
+  #labels: # are optional
+spec:
+  replicas: 4  # the number of pods to be created
+  selector:    # is mandatory # what pods to be managed by controller
+    matchLabels:
+     app: pyapp
+  template: # what pod to be created
+    metadata:
+      #name: kube will generate a random unique name for each automatically
+      labels:
+        app: pyapp
+    spec:
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      #initContainers:
+      containers:
+        - name: cont1
+          image: lerndevops/samples:pyapp-v1 # 3000
+          env:
+            - name: DBHOST
+              value: "mydb"
+            - name: JAVA_HOME
+              value: /opt/java
+          resources:
+            requests: # the min amount of resources (cpu&ram) that are guranted from the host/node where the cont run
+              memory: 128Mi
+              cpu: 20m  # 1 cpu core on a vm/node = 1000 milli cpus
+            limits:  # the max amount of resources (cpu&ram) that can be taking from the host/node where the cont run
+              memory: 512Mi
+              cpu: 100m
+
+  329  vi deployment.yaml
+  330  kubectl apply -f deployment.yaml
+  331  kubectl get deployment -o wide
+  332  kubectl get pods
+  333  kubectl describe pod pyapp-6886d7f5f4-2lhgn
+  334  kubectl exec pyapp-6886d7f5f4-2lhgn -- env
+  335  cat deployment.yaml
+
+  337  kubectl explain deployment
+  338  kubectl explain deployment.metadata
+  339  kubectl explain deployment.spec
+  340  kubectl explain deployment.spec.template
+  341  kubectl explain deployment.spec.template.spec
+  342  kubectl explain deployment.spec.template.spec.containers
+  343  kubectl explain deployment.spec.template.spec.containers.resources
+  344  kubectl explain deployment.spec.template.spec.containers.resources.requests

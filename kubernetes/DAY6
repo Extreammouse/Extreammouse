@@ -1,0 +1,174 @@
+DAY6
+
+  491  kubectl create deployment test --image=lerndevops/samples:netshoot
+  492  kubectl get deployment -o wide
+  493  kubectl get pod
+  494  kubectl scale deployment test --replicas 6
+  495  kubectl get pods -o wide
+  496  kubectl exec test-88fbc54b6-2sbdn -- ping 192.168.158.57
+  497  kubectl exec test-88fbc54b6-2sbdn -- ping 192.168.87.220
+  498  kubectl apply -f https://raw.githubusercontent.com/lerndevops/educka/master/examples/springboot-mongo-app.yml
+  499  kubectl get pods -o wide
+  500  kubectl get services
+  501  kubectl get pods -o wide
+  502  kubectl scale deployment mongodb --replicas 0
+  503  kubectl get pods -o wide
+  504  kubectl logs springboot-app-6487b976bb-bqtv7
+  505  kubectl scale deployment mongodb --replicas 1
+  506  kubectl get pods -o wide
+  507  kubectl get services
+  508  kubectl exec -it springboot-app-6487b976bb-5xtvx -- /bin/sh
+  509  sudo vi /etc/hosts
+  510  ping ravi
+  511  ping raviee
+  512  ping www.myshop.com
+  513  cat /etc/hosts
+  514  ping worker-node01
+  515  ping worker-node02
+  516  sudo su -
+  517  ls -l /etc/resolv.conf
+  518  cat /etc/resolv.conf
+  519  kubectl get pods -o wide
+  520  kubectl exec -it springboot-app-6487b976bb-5xtvx -- /bin/sh
+  521  history
+  522  kubectl get ns
+  523  kubectl apply -f https://raw.githubusercontent.com/lerndevops/educka/master/examples/springboot-mongo-app.yml -n teama
+  524  kubectl get services -o wide
+  525  kubectl get services -o wide -n teama
+  526  kubectl exec -it springboot-app-6487b976bb-5xtvx -- /bin/sh
+
+
+  528  kubectl get pods -o wide
+  529  kubectl exec -it test-88fbc54b6-85js4 -- /bin/bash
+  530  kubectl get pods -o wide
+  531  kubectl get pods -n teama
+  532  kubectl exec springboot-app-6487b976bb-8kmrn -n teama -- ping 192.168.158.60
+  533  kubectl get pods -n teama -o wide
+  534  kubectl exec test-88fbc54b6-bcjtp -- ping 192.168.87.216
+  535  kubectl exec test-88fbc54b6-bcjtp -- ping 192.168.158.60
+  536  kubectl get pods -o wide --show-labels
+  537  clear
+  538  vi netpol.yaml
+  539  kubectl apply -f netpol.yaml
+  540  kubectl get pods -o wide
+  541  kubectl exec springboot-app-6487b976bb-5xtvx -- ping 192.168.158.60
+  542  kubectl exec springboot-app-6487b976bb-5xtvx -- curl 192.168.158.60:27017
+  543  kubectl exec test-88fbc54b6-bcjtp -- ping 192.168.158.60
+  544  kubectl exec test-88fbc54b6-bcjtp -- curl 192.168.158.60:27017
+  545  kubectl get pods -n teama -o wide
+  546  kubectl exec springboot-app-6487b976bb-8kmrn -n teama -- ping 192.168.158.60
+
+
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata: 
+  name: allow-mongodb-access-from-spring-app-only
+  namespace: default
+spec: 
+  podSelector:  # on which pod we want to apply the policy 
+    matchLabels:
+      app: mongodb
+  policyTypes: 
+    - Ingress   # incoming traffic 
+    #- Egress    # outgoing traffic
+  ingress: 
+    - from: 
+       - podSelector:  # from which pod the above db pod should accept the traffic 
+           matchLabels:
+             app: myapp 
+       #- namespaceSelector: 
+       #- ipBlock:  
+
+
+  550  kubectl delete all --all
+  551  kubectl apply -f https://raw.githubusercontent.com/lerndevops/educka/master/6-networking/ingress/apps.yaml
+  552  kubectl get deployment -o widde
+  553  kubectl get deployment -o wide
+  554  kubectl get pods -o wide
+  555  kubectl get services
+  556  kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.3.0/deploy/static/provider/baremetal/deploy.yaml
+  557  kubectl get pods -n ingress-nginx
+  558  kubectl get services -n ingress-nginx
+  559  kubectl get ingressclass
+  560  kubectl get services
+  561  kubectl apply -f https://raw.githubusercontent.com/lerndevops/educka/master/6-networking/ingress/app-ingress-rules.yaml
+  562  kubectl get ingress
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: ns-dep
+  namespace: default
+  #labels: # are optional
+spec:
+  replicas: 2  # the number of pods to be created
+  selector:    # is mandatory # what pods to be managed by controller
+    matchLabels:
+     app: cmapp
+  template: # what pod to be created
+    metadata:
+      #name: kube will generate a random unique name for each automatically
+      labels:
+        app: cmapp
+    spec:
+      hostNetwork: true 
+      #nodeName: worker-node01
+      nodeSelector:
+        role: app 
+      #volumes:
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      #initContainers:
+      containers:
+        - name: cont1
+          image: nginx:latest
+          #envFrom:
+          #volumeMounts:
+
+
+  573  kubectl get nodes
+  574  echo $HOME
+  575  ls -a
+  576  cd .kube/
+  577  ls -l
+  578  vi config
+  579  rm config
+  580  sudo rm config
+  581  ls -l
+  582  kubectl get nodes
+  583  ls -l /etc/kubernetes/
+  584  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf get nodes
+  585  sudo kubectl get nodes
+  586  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf get nodes
+  587  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf get pod
+  588  export KUBECONFIG=/etc/kubernetes/admin.conf
+  589  env
+  590  kubctl get nodes
+  591  kubectl get nodes
+  592  sudo kubectl get nodes
+  593  sudo cp /etc/kubernetes/admin.conf config
+  594  ls -l
+  595  sudo chown devops:devops config
+  596  ls -l
+  597  kubectl get nodes
+  601  unset KUBECONFIG
+  602  env
+  603  clear
+  604  kubectl get nodes
+  605  scp config devops@10.128.0.17:/tmp
+  606  kubectl get nodes
+  607  kubectl get pod
+
+  615  kubectl run pod1 --image=nginx --namespace default -l app=test
+  616  kubectl delete pod pod1
+  617  kubectl run pod1 --image=nginx --namespace default -l app=test --dry-run=client -o yaml
+  618  kubectl run pod1 --image=nginx --namespace default -l app=test --dry-run=client -o json
+  619  kubectl run pod1 --image=nginx --namespace default -l app=test --dry-run=client -o json > pod1.json
+  620  vi pod1.json
+  621  kubectl apply -f pod1.json
+
+  610  kubectl config view
+  611  curl https://10.128.0.16:6443
+  612  curl https://10.128.0.16:6443  -k
+
+https://raw.githubusercontent.com/lerndevops/educka/master/2-pods/probes/myapp.yml

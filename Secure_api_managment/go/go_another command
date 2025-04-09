@@ -1,0 +1,120 @@
+package main
+
+import (
+    "fmt"
+    "log"
+    "os"
+    "os/exec"
+    "path/filepath"
+
+    "github.com/urfave/cli/v2"
+)
+
+type WorkflowManager struct {
+    ProjectPath string
+}
+
+func (w *WorkflowManager) RunTests(testPath string) error {
+    cmd := exec.Command("go", "test")
+    if testPath != "" {
+        cmd = exec.Command("go", "test", testPath)
+    }
+    
+    cmd.Dir = w.ProjectPath
+    output, err := cmd.CombinedOutput()
+    if err != nil {
+        return fmt.Errorf("test execution failed: %v\n%s", err, output)
+    }
+    
+    fmt.Printf("Tests passed successfully\n%s", output)
+    return nil
+}
+
+func (w *WorkflowManager) LintCode() error {
+    cmd := exec.Command("golangci-lint", "run")
+    cmd.Dir = w.ProjectPath
+    
+    output, err := cmd.CombinedOutput()
+    if err != nil {
+        return fmt.Errorf("linting failed: %v\n%s", err, output)
+    }
+    
+    fmt.Printf("Linting passed successfully\n%s", output)
+    return nil
+}
+
+func (w *WorkflowManager) BuildDocker(dockerfilePath string) error {
+    cmd := exec.Command("docker", "build", "-f", dockerfilePath, ".")
+    cmd.Dir = w.ProjectPath
+    
+    output, err := cmd.CombinedOutput()
+    if err != nil {
+        return fmt.Errorf("docker build failed: %v\n%s", err, output)
+    }
+    
+    fmt.Printf("Docker build completed successfully\n%s", output)
+    return nil
+}
+
+func main() {
+    app := &cli.App{
+        Name:  "devtool",
+        Usage: "Development workflow automation tool",
+        Commands: []*cli.Command{
+            {
+                Name:  "test",
+                Usage: "Run project tests",
+                Flags: []cli.Flag{
+                    &cli.StringFlag{
+                        Name:    "path",
+                        Aliases: []string{"p"},
+                        Usage:   "Specific test path to run",
+                    },
+                },
+                Action: func(c *cli.Context) error {
+                    if c.NArg() < 1 {
+                        return fmt.Errorf("project path is required")
+                    }
+                    
+                    projectPath := c.Args().First()
+                    testPath := c.String("path")
+                    
+                    wm := &WorkflowManager{ProjectPath: projectPath}
+                    return wm.RunTests(testPath)
+                },
+            },
+            {
+                Name:  "lint",
+                Usage: "Run code linting",
+                Action: func(c *cli.Context) error {
+                    if c.NArg() < 1 {
+                        return fmt.Errorf("project path is required")
+                    }
+                    
+                    projectPath := c.Args().First()
+                    wm := &WorkflowManager{ProjectPath: projectPath}
+                    return wm.LintCode()
+                },
+            },
+            {
+                Name:  "docker-build",
+                Usage: "Build Docker image",
+                Action: func(c *cli.Context) error {
+                    if c.NArg() < 2 {
+                        return fmt.Errorf("project path and dockerfile path are required")
+                    }
+                    
+                    projectPath := c.Args().Get(0)
+                    dockerfilePath := c.Args().Get(1)
+                    
+                    wm := &WorkflowManager{ProjectPath: projectPath}
+                    return wm.BuildDocker(dockerfilePath)
+                },
+            },
+        },
+    }
+
+    if err := app.Run(os.Args); err != nil {
+        log.Fatal(err)
+    }
+}

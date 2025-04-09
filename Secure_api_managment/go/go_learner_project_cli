@@ -1,0 +1,112 @@
+package main
+
+import (
+	"fmt"
+	"os"
+	"github.com/spf13/cobra"
+)
+
+type Task struct {
+	ID          int
+	Description string
+	Completed   bool
+}
+
+var tasks []Task
+var currentID int
+
+func main() {
+	var rootCmd = &cobra.Command{
+		Use:   "todo",
+		Short: "A simple CLI todo app",
+		Long:  "A simple command-line application to manage your todo list using Go and Cobra.",
+	}
+
+	rootCmd.AddCommand(addCmd, listCmd, completeCmd, deleteCmd)
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+taskDescription := ""
+var addCmd = &cobra.Command{
+	Use:   "add",
+	Short: "Add a new task",
+	Run: func(cmd *cobra.Command, args []string) {
+		if taskDescription == "" {
+			fmt.Println("Task description cannot be empty.")
+			return
+		}
+		currentID++
+		tasks = append(tasks, Task{ID: currentID, Description: taskDescription})
+		fmt.Printf("Task added: %s (ID: %d)\n", taskDescription, currentID)
+	},
+}
+
+func init() {
+	addCmd.Flags().StringVarP(&taskDescription, "desc", "d", "", "Description of the task")
+}
+
+var listCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List all tasks",
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(tasks) == 0 {
+			fmt.Println("No tasks found.")
+			return
+		}
+		for _, task := range tasks {
+			status := "[ ]"
+			if task.Completed {
+				status = "[x]"
+			}
+			fmt.Printf("%d: %s %s\n", task.ID, status, task.Description)
+		}
+	},
+}
+
+var completeCmd = &cobra.Command{
+	Use:   "complete [task ID]",
+	Short: "Mark a task as completed",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		id := parseID(args[0])
+		for i, task := range tasks {
+			if task.ID == id {
+				tasks[i].Completed = true
+				fmt.Printf("Task %d marked as completed.\n", id)
+				return
+			}
+		}
+		fmt.Printf("Task with ID %d not found.\n", id)
+	},
+}
+
+var deleteCmd = &cobra.Command{
+	Use:   "delete [task ID]",
+	Short: "Delete a task",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		id := parseID(args[0])
+		for i, task := range tasks {
+			if task.ID == id {
+				tasks = append(tasks[:i], tasks[i+1:]...)
+				fmt.Printf("Task %d deleted.\n", id)
+				return
+			}
+		}
+		fmt.Printf("Task with ID %d not found.\n", id)
+	},
+}
+
+func parseID(arg string) int {
+	var id int
+	_, err := fmt.Sscanf(arg, "%d", &id)
+	if err != nil {
+		fmt.Printf("Invalid task ID: %s\n", arg)
+		os.Exit(1)
+	}
+	return id
+}

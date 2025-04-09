@@ -1,0 +1,190 @@
+DAY7
+
+  634  kubectl config view
+  635  ls -l /etc/kubernetes/
+  636  ls -l /etc/kubernetes/pki/
+  637  vi .kube/config
+  638  curl -k https://10.128.0.16:6443
+  639  mkdir certs
+  640  cd certs/
+  641  ls -l
+  642  openssl genrsa -out user1.key 2048
+  643  ls -l
+  644  openssl genrsa -out user2.key 2048
+  645  ls -l
+  646  openssl req -new -key user1.key -out user1.csr -subj "/CN=user1/O=devops"
+  647  openssl req -new -key user2.key -out user2.csr -subj "/CN=user2/O=devops"
+  648  ls -l
+  649  cat user1.csr
+  650  clear
+  651  openssl req -in user1.csr -noout -text
+  652  ls -l
+  653  ls -l /etc/kubernetes/pki/
+  657  sudo openssl x509 -req -in user1.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -CAcreateserial -out user1.crt -days 1000
+  658  ls -l
+  659  sudo openssl x509 -req -in user2.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -CAcreateserial -out user2.crt -days 1000
+  660  ls -l
+  661  sudo chown devops:devops *
+  662  ls -l
+  663  cp /etc/kubernetes/admin.conf user1.conf
+  664  sudo cp /etc/kubernetes/admin.conf user1.conf
+  665  ls -l
+  666  sudo chown devops:devops *
+  667  clear
+  668  vi user1.conf
+  669  cat user1.crt
+  670  cat user1.crt | base64 | tr -d "\n"
+  671  vi user1.conf
+  672  cp user1.conf user2.conf
+  673  vi user2.conf
+  674  kubectl get nodes
+  675  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf get nodes
+  676  sudo kubectl --kubeconfig=/home/devops/certs/user1.conf get nodes
+  677  sudo kubectl --kubeconfig=/home/devops/certs/user2.conf get nodes
+
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /etc/kubernetes/pki/ca.crt
+    server: https://10.128.0.16:6443
+  name: devcluster
+- cluster:
+    certificate-authority: /etc/kubernetes/pki/ca.crt
+    server: https://10.128.0.16:6443
+  name: prodcluster
+contexts:
+- context:
+    cluster: devcluster
+    user: user1
+  name: user1@devcluster
+- context:
+    cluster: prodcluster
+    user: user1
+  name: user1@prodcluster
+current-context: user1@devcluster
+kind: Config
+preferences: {}
+users:
+- name: user1
+  user:
+    client-certificate: /home/devops/certs/user1.crt
+    client-key: /home/devops/certs/user1.key
+
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /etc/kubernetes/pki/ca.crt
+    server: https://10.128.0.16:6443
+  name: devcluster
+- cluster:
+    certificate-authority: /etc/kubernetes/pki/ca.crt
+    server: https://10.128.0.16:6443
+  name: prodcluster
+contexts:
+- context:
+    cluster: devcluster
+    user: user2
+  name: user2@devcluster
+- context:
+    cluster: prodcluster
+    user: user2
+  name: user2@prodcluster
+current-context: user2@devcluster
+kind: Config
+preferences: {}
+users:
+- name: user2
+  user:
+    client-certificate: /home/devops/certs/user2.crt
+    client-key: /home/devops/certs/user2.key
+
+
+  682  openssl x509 -enddate -noout -in user1.crt
+  683  ls -l /etc/kubernetes/pki/
+  684  kubeadm --help
+  685  kubeadm certs --helps
+  686  kubeadm certs --help
+  687  kubeadm certs check-expiration
+  688  sudo kubeadm certs check-expiration
+  689  openssl x509 -enddate -noout -in user1.crt
+  690  curl -k https://10.128.0.16:6443
+  691  cd ..
+  692  scp -r certs/ devops@10.128.0.17:/home/devops
+  693  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf create role readonly --namespace=teama --verb=get,list,watch --resource=pods,deployment,configmaps,services
+  694  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf create role admin --namespace=teama --verb="*" --resource="*.*"
+  695  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf get roles
+  696  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf get roles --namespace=teama
+  697  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf describe role readonly --namespace=teama
+  698  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf describe role admin --namespace=teama
+  699  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf create rolebinding user1-access --namespace=teama --role=readonly --user=user1
+  700  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf create rolebinding user2-access --namespace=teama --role=admin --user=user2
+  701  kubectl --kubeconfig=/home/devops/certs/user1.conf get pods
+  702  kubectl --kubeconfig=/home/devops/certs/user1.conf get pods --namespace teama
+  703  kubectl --kubeconfig=/home/devops/certs/user1.conf get cm --namespace teama
+  704  kubectl --kubeconfig=/home/devops/certs/user1.conf get svc --namespace teama
+  705  kubectl --kubeconfig=/home/devops/certs/user1.conf get deployments --namespace teama
+  706  kubectl --kubeconfig=/home/devops/certs/user1.conf get secrets  --namespace teama
+  707  kubectl --kubeconfig=/home/devops/certs/user1.conf run pod1 --image=httpd --namespace teama
+  708  kubectl --kubeconfig=/home/devops/certs/user1.conf delete pod podx--namespace teama
+  709  kubectl --kubeconfig=/home/devops/certs/user1.conf delete pod podx --namespace teama
+  710  kubectl --kubeconfig=/home/devops/certs/user2.conf delete pod podx --namespace teama
+  711  kubectl --kubeconfig=/home/devops/certs/user2.conf run pod1 --image=httpd --namespace teama
+  712  kubectl --kubeconfig=/home/devops/certs/user2.conf run pod1 --image=httpd --namespace default
+  713  kubectl --kubeconfig=/home/devops/certs/user2.conf get pods --namespace default
+  714  kubectl --kubeconfig=/home/devops/certs/user2.conf get pods --namespace teamb
+  715  kubectl --kubeconfig=/home/devops/certs/user2.conf get pods --namespace teama
+  716  history
+  717  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf create role readonly --namespace=teama --verb=get,list,watch --resource=pods,deployment,configmaps,services --dry-run=client -o yaml
+  718  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf create rolebinding user1-access --namespace=teama --role=readonly --user=user1 --dry-run=client -o yaml
+
+
+
+  720  kubectl api-resources
+  721  kubectl api-resources | grep true
+  722  kubectl api-resources | grep false
+  723  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf create clusterrole readonly-cr --verb=get,list,watch --resource="nodes,pods,namespaces,deployments"
+  724  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf create clusterrolebinding user1-cluster-access --clusterrole=readonly-cr --user=user1
+  725  kubectl --kubeconfig=/home/devops/certs/user1.conf run pod1 --image=httpd --namespace teama
+  726  kubectl --kubeconfig=/home/devops/certs/user1.conf run pod1 --image=httpd --namespace default
+  727  kubectl --kubeconfig=/home/devops/certs/user1.conf get pods --namespace default
+  728  kubectl --kubeconfig=/home/devops/certs/user1.conf get pods --namespace teama
+  729  kubectl --kubeconfig=/home/devops/certs/user1.conf get pods --namespace teamb
+  730  kubectl --kubeconfig=/home/devops/certs/user1.conf get pods --all-namespaces
+  731  kubectl --kubeconfig=/home/devops/certs/user1.conf get nodes
+  732  kubectl --kubeconfig=/home/devops/certs/user1.conf get namespaces
+  733  kubectl --kubeconfig=/home/devops/certs/user1.conf create namespace test
+  734  kubectl --kubeconfig=/home/devops/certs/user1.conf get pv
+  735  kubectl --kubeconfig=/home/devops/certs/user1.conf get sc
+  736  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf get clusterroles
+  737  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf describe clusterrole cluster-admin
+  738  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf describe clusterrole admin
+  739  sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf create clusterrolebinding user1-cluster-admin --clusterrole=cluster-admin --user=user1
+  740  sudo kubectl --kubeconfig=/home/devops/certs/user1.conf get sc
+  741  sudo kubectl --kubeconfig=/home/devops/certs/user1.conf get pv
+  742  sudo kubectl --kubeconfig=/home/devops/certs/user1.conf create deployment tesst --image=httpd -n teama
+  743  sudo kubectl --kubeconfig=/home/devops/certs/user1.conf create deployment tesst --image=httpd -n teamb
+  744  sudo kubectl --kubeconfig=/home/devops/certs/user1.conf create clusterrolebinding user2-cluster-admin --clusterrole=cluster-admin --user=user2
+
+
+  746  kubectl apply -f https://raw.githubusercontent.com/lerndevops/educka/master/dashboard/dashboard-insecure-v2.7.0.yaml
+  748  kubectl get pods -n kubernetes-dashboard
+  749  kubectl get svc -n kubernetes-dashboard
+  751  cat ds.yaml
+
+  753  kubectl get services
+  754  kubectl describe service kubernetes
+  755  kubectl get serviceaccont -n kubernetes-dashboard
+  756  kubectl get serviceaccount -n kubernetes-dashboard
+  757  kubectl get pods -n kubernetes-dashboard
+  758  kubectl exec -it kubernetes-dashboard-7fbdfd466c-xr568 -n kubernetes-dashboard -- /bin/bash
+  759  kubectl exec -it kubernetes-dashboard-7fbdfd466c-xr568 -n kubernetes-dashboard -- /bin/sh
+  760  kubectl exec -it kubernetes-dashboard-7fbdfd466c-xr568 -n kubernetes-dashboard -- /bin/ksh
+  761  kubectl create sa testsa
+  762  kubectl get sa testsa
+  763  vi sa-test-pod.yaml
+  764  kubectl apply -f sa-test-pod.yaml
+  765  kubectl get pods -o wide
+  766  kubectl exec -it sa-test-pod -- /bin/bash
+  767  kubectl create role testsa-role --namespace=default --verb=get,list,watch --resource="*.*"
+  768  kubectl create rolebinding testsa-rb --namespace=default --role=testsa-role --serviceaccount=default:testsa
+  769  kubectl exec -it sa-test-pod -- /bin/bash

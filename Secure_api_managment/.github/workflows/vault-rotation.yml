@@ -1,0 +1,81 @@
+name: build and deploy
+
+on:
+  push:
+    branches : [ main ]
+  pull_request:
+    branches : [ main ]
+  schedule: 
+      - cron: "0 0 * * 6"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      vault:
+        image: vault:latest
+        env:
+          VAULT_DEV_ROOT_TOKEN_ID: myroot
+          VAULT_DEV_LISTNING_ADDRESS: 0.0.0.0:8200
+        ports:
+          - 8200:8200
+    
+    steps:
+      - uses: actions/checkout@v3
+      - name: setup python
+        uses: actions/python@v4
+        with:
+          python-version: "3.10"
+
+      - name: install dependencies
+        working-directory: ./backend
+        run: |
+          pyython -m pip install --update pip
+          pip install requirment.txt
+          pip install pytest pytest-cov
+
+      - name: setup vault
+        env:
+          VAULT_ADDR: https://localhost:8200
+          VAULT_TOKEN: myroot
+        run: |
+          vault secrets enable -path=secret kv-v2
+
+      - name: runtest
+        working-directory: ./backend
+        env:
+           VAULT_ADDR: https://localhost:8200
+           VAULT_TOKEN: myroot
+        run: |
+          pytest tests/ --cov=app
+
+  build-and-push:
+      needs: test
+      runs-on: ubuntu-latest
+      if: git.event_name == 'push' && github.ref == 'refs/heads/main'
+      steps:
+        - name: checkout
+          uses: actions/checkout@v3
+
+        - name: build-push docker image
+          uses: docker/build-push-action@v4
+          with:
+            context: ./backend
+            push: true
+            tag: ghrc.io/${{ github.repository }}/api-manager:latest
+  
+  rotate-key:
+      needs: test
+      runs-on: ubuntu-latest
+      if: github.event_name == 'schedule'
+
+      steps:
+        - name: checkout
+          uses: actions/checkout@v2
+
+        - name: calls api
+          env:
+            VAULT_ADDR = {{ secrets.vault_addr }}
+            VAULT_TOKEN = {{ secrets.vault_token }}
+          run : |
+            curl -X POST http://localhost:5000:/api/rotate-key
